@@ -1,0 +1,422 @@
+#pragma version 11
+#pragma typetrack false
+
+// algopy.arc4.ARC4Contract.approval_program() -> uint64:
+main:
+    intcblock 0 1 2
+    bytecblock "status_verifikasi" "pemilik" "" 0x151f7c75 "luas" "lokasi" "nomor_sertifikat" "tanah_id"
+    txn ApplicationID
+    bnz main_after_if_else@2
+    // smart_contracts/land_chain/contract.py:6
+    // self.pemilik = String("")
+    bytec_1 // "pemilik"
+    bytec_2 // ""
+    app_global_put
+    // smart_contracts/land_chain/contract.py:7
+    // self.luas = String("")
+    bytec 4 // "luas"
+    bytec_2 // ""
+    app_global_put
+    // smart_contracts/land_chain/contract.py:8
+    // self.lokasi = String("")
+    bytec 5 // "lokasi"
+    bytec_2 // ""
+    app_global_put
+    // smart_contracts/land_chain/contract.py:9
+    // self.nomor_sertifikat = String("")
+    bytec 6 // "nomor_sertifikat"
+    bytec_2 // ""
+    app_global_put
+    // smart_contracts/land_chain/contract.py:10
+    // self.status_verifikasi = UInt64(0)
+    bytec_0 // "status_verifikasi"
+    intc_0 // 0
+    app_global_put
+    // smart_contracts/land_chain/contract.py:11
+    // self.tanah_id = String("")
+    bytec 7 // "tanah_id"
+    bytec_2 // ""
+    app_global_put
+
+main_after_if_else@2:
+    // smart_contracts/land_chain/contract.py:4
+    // class LandChain(ARC4Contract):
+    txn NumAppArgs
+    bz main___algopy_default_create@15
+    txn OnCompletion
+    !
+    assert // OnCompletion must be NoOp
+    txn ApplicationID
+    assert
+    pushbytess 0x2c1d6882 0x5c3a6182 0x44d5ec7e 0xbdf529f8 0x7c692e6b 0x02bece11 // method "register_tanah(string,string,string,string)string", method "buat_sertifikat(string)string", method "verifikasi_tanah()string", method "pindah_kepemilikan(string)string", method "get_info_tanah()string", method "hello(string)string"
+    txna ApplicationArgs 0
+    match register_tanah buat_sertifikat verifikasi_tanah pindah_kepemilikan get_info_tanah hello
+    err
+
+main___algopy_default_create@15:
+    txn OnCompletion
+    !
+    txn ApplicationID
+    !
+    &&
+    assert // OnCompletion must be NoOp && can only call when creating
+    intc_1 // 1
+    return
+
+
+// smart_contracts.land_chain.contract.LandChain.register_tanah[routing]() -> void:
+register_tanah:
+    // smart_contracts/land_chain/contract.py:13
+    // @abimethod
+    txna ApplicationArgs 1
+    dup
+    intc_0 // 0
+    extract_uint16 // on error: invalid array length header
+    intc_2 // 2
+    +
+    dig 1
+    len
+    ==
+    assert // invalid number of bytes for arc4.dynamic_array<arc4.uint8>
+    extract 2 0
+    txna ApplicationArgs 2
+    dup
+    intc_0 // 0
+    extract_uint16 // on error: invalid array length header
+    intc_2 // 2
+    +
+    dig 1
+    len
+    ==
+    assert // invalid number of bytes for arc4.dynamic_array<arc4.uint8>
+    extract 2 0
+    txna ApplicationArgs 3
+    dup
+    intc_0 // 0
+    extract_uint16 // on error: invalid array length header
+    intc_2 // 2
+    +
+    dig 1
+    len
+    ==
+    assert // invalid number of bytes for arc4.dynamic_array<arc4.uint8>
+    extract 2 0
+    txna ApplicationArgs 4
+    dup
+    intc_0 // 0
+    extract_uint16 // on error: invalid array length header
+    intc_2 // 2
+    +
+    dig 1
+    len
+    ==
+    assert // invalid number of bytes for arc4.dynamic_array<arc4.uint8>
+    extract 2 0
+    // smart_contracts/land_chain/contract.py:22
+    // self.tanah_id = tanah_id
+    bytec 7 // "tanah_id"
+    dig 4
+    app_global_put
+    // smart_contracts/land_chain/contract.py:23
+    // self.pemilik = pemilik
+    bytec_1 // "pemilik"
+    uncover 3
+    app_global_put
+    // smart_contracts/land_chain/contract.py:24
+    // self.luas = luas
+    bytec 4 // "luas"
+    uncover 2
+    app_global_put
+    // smart_contracts/land_chain/contract.py:25
+    // self.lokasi = lokasi
+    bytec 5 // "lokasi"
+    swap
+    app_global_put
+    // smart_contracts/land_chain/contract.py:26
+    // self.status_verifikasi = UInt64(0)
+    bytec_0 // "status_verifikasi"
+    intc_0 // 0
+    app_global_put
+    // smart_contracts/land_chain/contract.py:28
+    // return String("Tanah berhasil didaftarkan: ") + tanah_id
+    pushbytes "Tanah berhasil didaftarkan: "
+    swap
+    concat
+    // smart_contracts/land_chain/contract.py:13
+    // @abimethod
+    dup
+    len
+    itob
+    extract 6 2
+    swap
+    concat
+    bytec_3 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_1 // 1
+    return
+
+
+// smart_contracts.land_chain.contract.LandChain.buat_sertifikat[routing]() -> void:
+buat_sertifikat:
+    // smart_contracts/land_chain/contract.py:30
+    // @abimethod
+    txna ApplicationArgs 1
+    dup
+    intc_0 // 0
+    extract_uint16 // on error: invalid array length header
+    intc_2 // 2
+    +
+    dig 1
+    len
+    ==
+    assert // invalid number of bytes for arc4.dynamic_array<arc4.uint8>
+    extract 2 0
+    // smart_contracts/land_chain/contract.py:36
+    // self.nomor_sertifikat = nomor_sertifikat
+    bytec 6 // "nomor_sertifikat"
+    dig 1
+    app_global_put
+    // smart_contracts/land_chain/contract.py:37
+    // return String("Sertifikat berhasil dibuat: ") + nomor_sertifikat
+    pushbytes "Sertifikat berhasil dibuat: "
+    swap
+    concat
+    // smart_contracts/land_chain/contract.py:30
+    // @abimethod
+    dup
+    len
+    itob
+    extract 6 2
+    swap
+    concat
+    bytec_3 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_1 // 1
+    return
+
+
+// smart_contracts.land_chain.contract.LandChain.verifikasi_tanah[routing]() -> void:
+verifikasi_tanah:
+    // smart_contracts/land_chain/contract.py:42
+    // self.status_verifikasi = UInt64(1)
+    bytec_0 // "status_verifikasi"
+    intc_1 // 1
+    app_global_put
+    // smart_contracts/land_chain/contract.py:39
+    // @abimethod
+    pushbytes 0x151f7c75001b54616e616820626572686173696c2064697665726966696b617369
+    log
+    intc_1 // 1
+    return
+
+
+// smart_contracts.land_chain.contract.LandChain.pindah_kepemilikan[routing]() -> void:
+pindah_kepemilikan:
+    // smart_contracts/land_chain/contract.py:45
+    // @abimethod
+    txna ApplicationArgs 1
+    dup
+    intc_0 // 0
+    extract_uint16 // on error: invalid array length header
+    intc_2 // 2
+    +
+    dig 1
+    len
+    ==
+    assert // invalid number of bytes for arc4.dynamic_array<arc4.uint8>
+    extract 2 0
+    // smart_contracts/land_chain/contract.py:51-52
+    // # Cek apakah tanah sudah terverifikasi
+    // if self.status_verifikasi == UInt64(1):
+    intc_0 // 0
+    bytec_0 // "status_verifikasi"
+    app_global_get_ex
+    assert // check self.status_verifikasi exists
+    intc_1 // 1
+    ==
+    bz pindah_kepemilikan_else_body@3
+    // smart_contracts/land_chain/contract.py:53
+    // pemilik_lama = self.pemilik
+    intc_0 // 0
+    bytec_1 // "pemilik"
+    app_global_get_ex
+    assert // check self.pemilik exists
+    // smart_contracts/land_chain/contract.py:54
+    // self.pemilik = pemilik_baru
+    bytec_1 // "pemilik"
+    dig 2
+    dup
+    cover 3
+    app_global_put
+    // smart_contracts/land_chain/contract.py:55-56
+    // # Reset status verifikasi setelah pindah kepemilikan
+    // self.status_verifikasi = UInt64(0)
+    bytec_0 // "status_verifikasi"
+    intc_0 // 0
+    app_global_put
+    // smart_contracts/land_chain/contract.py:57
+    // return String("Kepemilikan dipindahkan dari ") + pemilik_lama + String(" ke ") + pemilik_baru
+    pushbytes "Kepemilikan dipindahkan dari "
+    swap
+    concat
+    pushbytes " ke "
+    concat
+    swap
+    concat
+
+pindah_kepemilikan_after_inlined_smart_contracts.land_chain.contract.LandChain.pindah_kepemilikan@4:
+    // smart_contracts/land_chain/contract.py:45
+    // @abimethod
+    dup
+    len
+    itob
+    extract 6 2
+    swap
+    concat
+    bytec_3 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_1 // 1
+    return
+
+pindah_kepemilikan_else_body@3:
+    // smart_contracts/land_chain/contract.py:59
+    // return String("Error: Tanah harus terverifikasi sebelum pindah kepemilikan")
+    pushbytes "Error: Tanah harus terverifikasi sebelum pindah kepemilikan"
+    // smart_contracts/land_chain/contract.py:45
+    // @abimethod
+    b pindah_kepemilikan_after_inlined_smart_contracts.land_chain.contract.LandChain.pindah_kepemilikan@4
+
+
+// smart_contracts.land_chain.contract.LandChain.get_info_tanah[routing]() -> void:
+get_info_tanah:
+    // smart_contracts/land_chain/contract.py:64
+    // status_text = String("Terverifikasi") if self.status_verifikasi == UInt64(1) else String("Belum Terverifikasi")
+    intc_0 // 0
+    bytec_0 // "status_verifikasi"
+    app_global_get_ex
+    assert // check self.status_verifikasi exists
+    intc_1 // 1
+    ==
+    bz get_info_tanah_ternary_false@3
+    pushbytes "Terverifikasi"
+
+get_info_tanah_ternary_merge@4:
+    // smart_contracts/land_chain/contract.py:67
+    // info += String("\nID: ") + self.tanah_id
+    intc_0 // 0
+    bytec 7 // "tanah_id"
+    app_global_get_ex
+    assert // check self.tanah_id exists
+    pushbytes "Informasi Tanah:\nID: "
+    swap
+    concat
+    // smart_contracts/land_chain/contract.py:68
+    // info += String("\nPemilik: ") + self.pemilik
+    intc_0 // 0
+    bytec_1 // "pemilik"
+    app_global_get_ex
+    assert // check self.pemilik exists
+    pushbytes "\nPemilik: "
+    swap
+    concat
+    concat
+    // smart_contracts/land_chain/contract.py:69
+    // info += String("\nLuas: ") + self.luas
+    intc_0 // 0
+    bytec 4 // "luas"
+    app_global_get_ex
+    assert // check self.luas exists
+    pushbytes "\nLuas: "
+    swap
+    concat
+    concat
+    // smart_contracts/land_chain/contract.py:70
+    // info += String("\nLokasi: ") + self.lokasi
+    intc_0 // 0
+    bytec 5 // "lokasi"
+    app_global_get_ex
+    assert // check self.lokasi exists
+    pushbytes "\nLokasi: "
+    swap
+    concat
+    concat
+    // smart_contracts/land_chain/contract.py:71
+    // info += String("\nSertifikat: ") + self.nomor_sertifikat
+    intc_0 // 0
+    bytec 6 // "nomor_sertifikat"
+    app_global_get_ex
+    assert // check self.nomor_sertifikat exists
+    pushbytes "\nSertifikat: "
+    swap
+    concat
+    concat
+    // smart_contracts/land_chain/contract.py:72
+    // info += String("\nStatus: ") + status_text
+    pushbytes "\nStatus: "
+    uncover 2
+    concat
+    concat
+    // smart_contracts/land_chain/contract.py:61
+    // @abimethod
+    dup
+    len
+    itob
+    extract 6 2
+    swap
+    concat
+    bytec_3 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_1 // 1
+    return
+
+get_info_tanah_ternary_false@3:
+    // smart_contracts/land_chain/contract.py:64
+    // status_text = String("Terverifikasi") if self.status_verifikasi == UInt64(1) else String("Belum Terverifikasi")
+    pushbytes "Belum Terverifikasi"
+    b get_info_tanah_ternary_merge@4
+
+
+// smart_contracts.land_chain.contract.LandChain.hello[routing]() -> void:
+hello:
+    // smart_contracts/land_chain/contract.py:76
+    // @abimethod
+    txna ApplicationArgs 1
+    dup
+    intc_0 // 0
+    extract_uint16 // on error: invalid array length header
+    intc_2 // 2
+    +
+    dig 1
+    len
+    ==
+    assert // invalid number of bytes for arc4.dynamic_array<arc4.uint8>
+    extract 2 0
+    // smart_contracts/land_chain/contract.py:79
+    // return String("Hello, ") + name + String("! Selamat datang di LandChain.")
+    pushbytes "Hello, "
+    swap
+    concat
+    pushbytes "! Selamat datang di LandChain."
+    concat
+    // smart_contracts/land_chain/contract.py:76
+    // @abimethod
+    dup
+    len
+    itob
+    extract 6 2
+    swap
+    concat
+    bytec_3 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_1 // 1
+    return
