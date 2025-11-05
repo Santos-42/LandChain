@@ -4,6 +4,11 @@
 ### 📖 Project Description 
 LandChain is a decentralized land registration and certificate management system built on the Algorand blockchain. It revolutionizes traditional land registration by providing immutable, transparent, and secure digital land certificates that are tamper-proof and easily verifiable.
 
+### 🔥 Project Link
+- Application ID: 748980130
+- Deployed Smart Contract Link: https://lora.algokit.io/testnet/application/748980130
+- Deployed Frontend Link: https://landchain-7hxn7zq89-santos-42s-projects.vercel.app
+
 
 ### 🎯 What It Does
 LandChain transforms physical land certificates into digital assets on the blockchain, enabling:
