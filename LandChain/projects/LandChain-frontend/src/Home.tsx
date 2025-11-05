@@ -1,6 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { useWallet } from '@txnlab/use-wallet-react';
+import ConnectWallet from './components/ConnectWallet';
+import { CONTRACT_CONFIG, testNetworkConnection } from './utils/contract';
+import {
+  getInfoTanah,
+  readContractGlobalState,
+  createMethodCallTxn
+} from './utils/contract';
+import algosdk from 'algosdk';
 
-// Modern color scheme - HeLa inspired dengan variasi section
+const algodClient = new algosdk.Algodv2(
+  '',
+  'https://testnet-api.algonode.cloud',
+  ''
+);
+
+// Modern color scheme
 const colors = {
   primary: {
     50: '#f0f9ff',
@@ -38,15 +53,126 @@ const colors = {
   }
 };
 
-// Modern button component
-const ModernButton = ({ children, onClick, variant = 'primary', disabled = false, loading = false, size = 'md', ...props }: any) => {
+// --- Tipe Props untuk Komponen ---
+
+interface ModernButtonProps {
+  children: React.ReactNode;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  variant?: string;
+  disabled?: boolean;
+  loading?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+  style?: React.CSSProperties;
+  type?: 'button' | 'submit' | 'reset';
+  [key: string]: any; // Untuk props tambahan
+}
+
+interface ModernCardProps {
+  children: React.ReactNode;
+  className?: string;
+  hover?: boolean;
+  variant?: string;
+  style?: React.CSSProperties;
+  [key: string]: any;
+}
+
+interface ModernModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+interface InputFieldProps {
+  label: string;
+  type?: string;
+  value: string | number;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  style?: React.CSSProperties;
+  [key: string]: any;
+}
+
+interface RegisterTanahModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (formData: any) => Promise<boolean>;
+  loading: boolean;
+}
+
+interface TanahCardProps {
+  tanah: any;
+  onVerifikasi: (tanahId: string) => void;
+  loading: boolean;
+}
+
+interface StatsCardProps {
+  icon: React.ReactNode;
+  title: string;
+  value: string | number;
+  description: string;
+  colorVariant?: string;
+}
+
+interface QuickActionButtonProps {
+  icon: React.ReactNode;
+  label: string;
+  description: string;
+  variant?: string;
+  onClick: () => void;
+}
+
+interface HeroSectionProps {
+  onConnectWallet: () => void;
+  activeAddress: string | null;
+  onDisconnect: () => void;
+}
+
+interface BuatSertifikatModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  selectedTanah: any;
+  onSubmit: (formData: any, selectedTanah: any) => Promise<boolean>;
+  loading: boolean;
+}
+
+interface TransferKepemilikanModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  selectedTanah: any;
+  onSubmit: (formData: any, selectedTanah: any) => Promise<boolean>;
+  loading: boolean;
+}
+
+interface LihatInformasiModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  selectedTanah: any;
+}
+
+interface PilihTanahModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onTanahSelected: (tanah: any) => void;
+  title: string;
+  actionLabel: string;
+  userLands: any[];
+}
+
+
+// --- Komponen-Komponen UI ---
+
+const ModernButton: React.FC<ModernButtonProps> = ({ children, onClick, variant = 'primary', disabled = false, loading = false, size = 'md', ...props }) => {
   const sizes: { [key: string]: any } = {
     sm: { padding: '0.5rem 1rem', fontSize: '0.75rem' },
     md: { padding: '0.75rem 1.5rem', fontSize: '0.875rem' },
     lg: { padding: '1rem 2rem', fontSize: '1rem' }
   };
 
-  const baseStyle = {
+  const baseStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -58,7 +184,7 @@ const ModernButton = ({ children, onClick, variant = 'primary', disabled = false
     opacity: disabled ? 0.6 : 1,
     border: 'none',
     outline: 'none',
-    position: 'relative' as const,
+    position: 'relative',
     overflow: 'hidden',
     ...sizes[size]
   };
@@ -123,8 +249,7 @@ const ModernButton = ({ children, onClick, variant = 'primary', disabled = false
   );
 };
 
-// Modern Card Component dengan variasi warna
-const ModernCard = ({ children, className = '', hover = false, variant = 'default', ...props }: any) => {
+const ModernCard: React.FC<ModernCardProps> = ({ children, className = '', hover = false, variant = 'default', ...props }) => {
   const cardVariants: { [key: string]: any } = {
     default: {
       background: 'rgba(255, 255, 255, 0.95)',
@@ -171,8 +296,7 @@ const ModernCard = ({ children, className = '', hover = false, variant = 'defaul
   );
 };
 
-// Modern Modal Component
-const ModernModal = ({ isOpen, onClose, title, children, size = 'md' }: any) => {
+const ModernModal: React.FC<ModernModalProps> = ({ isOpen, onClose, title, children, size = 'md' }) => {
   if (!isOpen) return null;
 
   const sizes: { [key: string]: any } = {
@@ -251,8 +375,7 @@ const ModernModal = ({ isOpen, onClose, title, children, size = 'md' }: any) => 
   );
 };
 
-// Input Field Component
-const InputField = ({ label, type = 'text', value, onChange, placeholder, required = false, disabled = false, style, ...props }: any) => (
+const InputField: React.FC<InputFieldProps> = ({ label, type = 'text', value, onChange, placeholder, required = false, disabled = false, style, ...props }) => (
   <div style={{ marginBottom: '1.25rem' }}>
     <label style={{
       display: 'block',
@@ -276,7 +399,7 @@ const InputField = ({ label, type = 'text', value, onChange, placeholder, requir
           border: `1px solid ${colors.secondary[300]}`,
           borderRadius: '0.5rem',
           fontSize: '0.875rem',
-          resize: 'vertical' as const,
+          resize: 'vertical',
           minHeight: '80px',
           transition: 'all 0.2s ease-in-out',
           background: disabled ? colors.secondary[100] : '#f8fafc',
@@ -316,9 +439,7 @@ const InputField = ({ label, type = 'text', value, onChange, placeholder, requir
   </div>
 );
 
-// Register Tanah Modal
-const RegisterTanahModal = ({ isOpen, onClose }: any) => {
-  const [loading, setLoading] = useState(false);
+const RegisterTanahModal: React.FC<RegisterTanahModalProps> = ({ isOpen, onClose, onSubmit, loading }) => {
   const [formData, setFormData] = useState({
     tanah_id: '',
     pemilik: '',
@@ -328,13 +449,16 @@ const RegisterTanahModal = ({ isOpen, onClose }: any) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    if (!formData.tanah_id || !formData.pemilik || !formData.luas || !formData.lokasi) {
+      alert('Harap isi semua field yang wajib diisi.');
+      return;
+    }
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    alert(`Tanah berhasil didaftarkan: ${formData.tanah_id}`);
-    setFormData({ tanah_id: '', pemilik: '', luas: '', lokasi: '' });
-    onClose();
-    setLoading(false);
+    const success = await onSubmit(formData);
+    if (success) {
+      setFormData({ tanah_id: '', pemilik: '', luas: '', lokasi: '' });
+      onClose();
+    }
   };
 
   return (
@@ -349,35 +473,32 @@ const RegisterTanahModal = ({ isOpen, onClose }: any) => {
           <InputField
             label="ID Tanah *"
             value={formData.tanah_id}
-            onChange={(e: any) => setFormData({ ...formData, tanah_id: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, tanah_id: e.target.value })}
             placeholder="Contoh: TNH-001"
             required
             style={{ background: '#f8fafc' }}
           />
-
           <InputField
             label="Nama Pemilik *"
             value={formData.pemilik}
-            onChange={(e: any) => setFormData({ ...formData, pemilik: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, pemilik: e.target.value })}
             placeholder="Nama lengkap pemilik"
             required
             style={{ background: '#f8fafc' }}
           />
-
           <InputField
             label="Luas Tanah *"
             value={formData.luas}
-            onChange={(e: any) => setFormData({ ...formData, luas: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, luas: e.target.value })}
             placeholder="Contoh: 500 m²"
             required
             style={{ background: '#f8fafc' }}
           />
-
           <InputField
             label="Lokasi Tanah *"
             type="textarea"
             value={formData.lokasi}
-            onChange={(e: any) => setFormData({ ...formData, lokasi: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, lokasi: e.target.value })}
             placeholder="Alamat lengkap lokasi tanah"
             required
             style={{ background: '#f8fafc' }}
@@ -435,13 +556,11 @@ const RegisterTanahModal = ({ isOpen, onClose }: any) => {
   );
 };
 
-// Tanah Card Component dengan variasi warna
-const TanahCard = ({ tanah, onVerifikasi }: any) => {
+const TanahCard: React.FC<TanahCardProps> = ({ tanah, onVerifikasi, loading }) => {
   const isVerified = tanah.status_verifikasi === 1;
 
   return (
     <ModernCard hover variant="primary" style={{ height: 'fit-content' }}>
-      {/* Header dengan gradient ungu */}
       <div style={{
         background: `linear-gradient(135deg, ${colors.accent.violet}, ${colors.accent.indigo})`,
         padding: '1.5rem',
@@ -483,7 +602,6 @@ const TanahCard = ({ tanah, onVerifikasi }: any) => {
         </div>
       </div>
 
-      {/* Content */}
       <div style={{ padding: '1.5rem' }}>
         <div style={{ display: 'grid', gap: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -531,19 +649,19 @@ const TanahCard = ({ tanah, onVerifikasi }: any) => {
           </div>
         </div>
 
-        {/* Action Button */}
         <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: `1px solid ${colors.secondary[100]}` }}>
           <ModernButton
             variant={isVerified ? "secondary" : "primary"}
             onClick={() => onVerifikasi(tanah.tanah_id)}
-            disabled={isVerified}
+            disabled={isVerified || loading}
+            loading={loading}
             style={{
               width: '100%', justifyContent: 'center', borderRadius: '10px',
               border: 'none'
             }}
             size="md"
           >
-            {isVerified ? '✅ Sudah Diverifikasi' : '✓ Verifikasi Tanah'}
+            {isVerified ? '✅ Sudah Diverifikasi' : (loading ? 'Memverifikasi...' : '✓ Verifikasi Tanah')}
           </ModernButton>
         </div>
       </div>
@@ -551,8 +669,7 @@ const TanahCard = ({ tanah, onVerifikasi }: any) => {
   );
 };
 
-// Stats Card Component - Dengan warna berbeda
-const StatsCard = ({ icon, title, value, description, colorVariant = 'primary' }: any) => {
+const StatsCard: React.FC<StatsCardProps> = ({ icon, title, value, description, colorVariant = 'primary' }) => {
   const colorMap: { [key: string]: string } = {
     primary: colors.primary[500],
     emerald: colors.accent.emerald,
@@ -592,8 +709,7 @@ const StatsCard = ({ icon, title, value, description, colorVariant = 'primary' }
   );
 };
 
-// Quick Action Button Component
-const QuickActionButton = ({ icon, label, description, variant = 'primary', onClick }: any) => {
+const QuickActionButton: React.FC<QuickActionButtonProps> = ({ icon, label, description, variant = 'primary', onClick }) => {
   const variantStyles: { [key: string]: any } = {
     primary: {
       background: colors.primary[50],
@@ -617,9 +733,25 @@ const QuickActionButton = ({ icon, label, description, variant = 'primary', onCl
     }
   };
 
+  const handleClick = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.stopPropagation();
+    if (onClick && typeof onClick === 'function') {
+      onClick();
+    }
+  };
+
   return (
     <div
-      onClick={onClick}
+      onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick(e);
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      aria-label={label}
       style={{
         background: variantStyles[variant]?.background || variantStyles.primary.background,
         color: variantStyles[variant]?.color || variantStyles.primary.color,
@@ -634,6 +766,8 @@ const QuickActionButton = ({ icon, label, description, variant = 'primary', onCl
         textAlign: 'left',
         height: 'auto',
         minHeight: 'auto',
+        pointerEvents: 'auto',
+        userSelect: 'none',
       }}
       onMouseOver={(e) => {
         e.currentTarget.style.transform = 'translateY(-2px)';
@@ -687,8 +821,8 @@ const QuickActionButton = ({ icon, label, description, variant = 'primary', onCl
     </div>
   );
 };
-// Hero Section Component dengan warna khusus
-const HeroSection = ({ onConnectWallet, activeAddress, onDisconnect }: any) => (
+
+const HeroSection: React.FC<HeroSectionProps> = ({ onConnectWallet, activeAddress, onDisconnect }) => (
   <div style={{
     background: `linear-gradient(135deg, ${colors.primary[500]}, ${colors.primary[700]})`,
     borderRadius: '1.5rem',
@@ -699,7 +833,6 @@ const HeroSection = ({ onConnectWallet, activeAddress, onDisconnect }: any) => (
     marginBottom: '3rem',
     boxShadow: '0 20px 50px -12px rgba(14, 165, 233, 0.3)'
   }}>
-    {/* Background Pattern */}
     <div style={{
       position: 'absolute',
       top: 0,
@@ -825,9 +958,7 @@ const HeroSection = ({ onConnectWallet, activeAddress, onDisconnect }: any) => (
   </div>
 );
 
-// Buat Sertifikat Modal
-const BuatSertifikatModal = ({ isOpen, onClose, selectedTanah }: any) => {
-  const [loading, setLoading] = useState(false);
+const BuatSertifikatModal: React.FC<BuatSertifikatModalProps> = ({ isOpen, onClose, selectedTanah, onSubmit, loading }) => {
   const [formData, setFormData] = useState({
     nomor_sertifikat: '',
     tanggal_terbit: '',
@@ -837,13 +968,11 @@ const BuatSertifikatModal = ({ isOpen, onClose, selectedTanah }: any) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    alert(`Sertifikat berhasil dibuat untuk: ${selectedTanah?.tanah_id}`);
-    setFormData({ nomor_sertifikat: '', tanggal_terbit: '', masa_berlaku: '', jenis_sertifikat: 'SHM' });
-    onClose();
-    setLoading(false);
+    const success = await onSubmit(formData, selectedTanah);
+    if (success) {
+      setFormData({ nomor_sertifikat: '', tanggal_terbit: '', masa_berlaku: '', jenis_sertifikat: 'SHM' });
+      onClose();
+    }
   };
 
   return (
@@ -870,7 +999,7 @@ const BuatSertifikatModal = ({ isOpen, onClose, selectedTanah }: any) => {
           <InputField
             label="Nomor Sertifikat"
             value={formData.nomor_sertifikat}
-            onChange={(e: any) => setFormData({ ...formData, nomor_sertifikat: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, nomor_sertifikat: e.target.value })}
             placeholder="Contoh: SHM-123456789"
             required
           />
@@ -880,14 +1009,13 @@ const BuatSertifikatModal = ({ isOpen, onClose, selectedTanah }: any) => {
               label="Tanggal Terbit"
               type="date"
               value={formData.tanggal_terbit}
-              onChange={(e: any) => setFormData({ ...formData, tanggal_terbit: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, tanggal_terbit: e.target.value })}
               required
             />
-
             <InputField
               label="Masa Berlaku"
               value={formData.masa_berlaku}
-              onChange={(e: any) => setFormData({ ...formData, masa_berlaku: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, masa_berlaku: e.target.value })}
               placeholder="Contoh: 30 Tahun"
               required
             />
@@ -905,7 +1033,7 @@ const BuatSertifikatModal = ({ isOpen, onClose, selectedTanah }: any) => {
             </label>
             <select
               value={formData.jenis_sertifikat}
-              onChange={(e: any) => setFormData({ ...formData, jenis_sertifikat: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, jenis_sertifikat: e.target.value })}
               style={{
                 width: '100%',
                 padding: '0.75rem 1rem',
@@ -927,10 +1055,10 @@ const BuatSertifikatModal = ({ isOpen, onClose, selectedTanah }: any) => {
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
-          <ModernButton variant="secondary" onClick={onClose} type="button">
+          <ModernButton variant="secondary" onClick={onClose} type="button" disabled={loading}>
             Batal
           </ModernButton>
-          <ModernButton type="submit" loading={loading} variant="amber">
+          <ModernButton type="submit" loading={loading} variant="amber" disabled={loading}>
             🏛️ Buat Sertifikat
           </ModernButton>
         </div>
@@ -939,9 +1067,7 @@ const BuatSertifikatModal = ({ isOpen, onClose, selectedTanah }: any) => {
   );
 };
 
-// Transfer Kepemilikan Modal
-const TransferKepemilikanModal = ({ isOpen, onClose, selectedTanah }: any) => {
-  const [loading, setLoading] = useState(false);
+const TransferKepemilikanModal: React.FC<TransferKepemilikanModalProps> = ({ isOpen, onClose, selectedTanah, onSubmit, loading }) => {
   const [formData, setFormData] = useState({
     pemilik_baru: '',
     alamat_pemilik_baru: '',
@@ -951,13 +1077,11 @@ const TransferKepemilikanModal = ({ isOpen, onClose, selectedTanah }: any) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    alert(`Kepemilikan berhasil ditransfer ke: ${formData.pemilik_baru}`);
-    setFormData({ pemilik_baru: '', alamat_pemilik_baru: '', tanggal_transfer: '', alasan_transfer: '' });
-    onClose();
-    setLoading(false);
+    const success = await onSubmit(formData, selectedTanah);
+    if (success) {
+      setFormData({ pemilik_baru: '', alamat_pemilik_baru: '', tanggal_transfer: '', alasan_transfer: '' });
+      onClose();
+    }
   };
 
   return (
@@ -984,43 +1108,40 @@ const TransferKepemilikanModal = ({ isOpen, onClose, selectedTanah }: any) => {
           <InputField
             label="Nama Pemilik Baru"
             value={formData.pemilik_baru}
-            onChange={(e: any) => setFormData({ ...formData, pemilik_baru: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, pemilik_baru: e.target.value })}
             placeholder="Nama lengkap pemilik baru"
             required
           />
-
           <InputField
             label="Alamat Pemilik Baru"
             type="textarea"
             value={formData.alamat_pemilik_baru}
-            onChange={(e: any) => setFormData({ ...formData, alamat_pemilik_baru: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, alamat_pemilik_baru: e.target.value })}
             placeholder="Alamat lengkap pemilik baru"
             required
           />
-
           <InputField
             label="Tanggal Transfer"
             type="date"
             value={formData.tanggal_transfer}
-            onChange={(e: any) => setFormData({ ...formData, tanggal_transfer: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, tanggal_transfer: e.target.value })}
             required
           />
-
           <InputField
             label="Alasan Transfer"
             type="textarea"
             value={formData.alasan_transfer}
-            onChange={(e: any) => setFormData({ ...formData, alasan_transfer: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, alasan_transfer: e.target.value })}
             placeholder="Jelaskan alasan transfer kepemilikan"
             required
           />
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
-          <ModernButton variant="secondary" onClick={onClose} type="button">
+          <ModernButton variant="secondary" onClick={onClose} type="button" disabled={loading}>
             Batal
           </ModernButton>
-          <ModernButton type="submit" loading={loading} variant="violet">
+          <ModernButton type="submit" loading={loading} variant="violet" disabled={loading}>
             🔄 Transfer Kepemilikan
           </ModernButton>
         </div>
@@ -1029,14 +1150,29 @@ const TransferKepemilikanModal = ({ isOpen, onClose, selectedTanah }: any) => {
   );
 };
 
-// Lihat Informasi Modal
-const LihatInformasiModal = ({ isOpen, onClose, selectedTanah }: any) => {
+const LihatInformasiModal: React.FC<LihatInformasiModalProps> = ({ isOpen, onClose, selectedTanah }) => {
+  const [infoTanah, setInfoTanah] = useState<string>('');
+
+  useEffect(() => {
+    const loadInfo = async () => {
+      if (isOpen && selectedTanah) {
+        try {
+          const info = await getInfoTanah();
+          setInfoTanah(info);
+        } catch (error) {
+          console.error('Error loading tanah info:', error);
+          setInfoTanah('Gagal memuat informasi tanah');
+        }
+      }
+    };
+    loadInfo();
+  }, [isOpen, selectedTanah]);
+
   if (!selectedTanah) return null;
 
   return (
     <ModernModal isOpen={isOpen} onClose={onClose} title="📋 Informasi Detail Tanah" size="lg">
       <div style={{ display: 'grid', gap: '2rem' }}>
-        {/* Header Info */}
         <div style={{
           background: `linear-gradient(135deg, ${colors.accent.emerald}, ${colors.accent.emerald}dd)`,
           padding: '1.5rem',
@@ -1060,86 +1196,21 @@ const LihatInformasiModal = ({ isOpen, onClose, selectedTanah }: any) => {
           </div>
         </div>
 
-        {/* Informasi Detail */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-          <div>
-            <h4 style={{ color: colors.secondary[700], fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
-              📝 Informasi Dasar
-            </h4>
-            <div style={{ display: 'grid', gap: '1rem' }}>
-              <div>
-                <p style={{ fontSize: '0.75rem', color: colors.secondary[500], margin: '0 0 0.25rem 0' }}>Pemilik</p>
-                <p style={{ fontWeight: 600, color: colors.secondary[800], margin: 0 }}>{selectedTanah.pemilik}</p>
-              </div>
-              <div>
-                <p style={{ fontSize: '0.75rem', color: colors.secondary[500], margin: '0 0 0.25rem 0' }}>Luas Tanah</p>
-                <p style={{ fontWeight: 600, color: colors.secondary[800], margin: 0 }}>{selectedTanah.luas}</p>
-              </div>
-              <div>
-                <p style={{ fontSize: '0.75rem', color: colors.secondary[500], margin: '0 0 0.25rem 0' }}>Status</p>
-                <p style={{
-                  fontWeight: 600,
-                  color: selectedTanah.status_verifikasi === 1 ? colors.accent.emerald : colors.accent.amber,
-                  margin: 0
-                }}>
-                  {selectedTanah.status_verifikasi === 1 ? '✅ Terverifikasi' : '⏳ Menunggu Verifikasi'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h4 style={{ color: colors.secondary[700], fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
-              📍 Informasi Lokasi
-            </h4>
-            <div>
-              <p style={{ fontSize: '0.75rem', color: colors.secondary[500], margin: '0 0 0.5rem 0' }}>Lokasi Tanah</p>
-              <p style={{ fontWeight: 500, color: colors.secondary[700], margin: 0, lineHeight: 1.5 }}>
-                {selectedTanah.lokasi}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Informasi Sertifikat */}
-        {selectedTanah.nomor_sertifikat && (
-          <div style={{
-            background: colors.primary[50],
-            padding: '1.5rem',
-            borderRadius: '0.75rem',
-            border: `1px solid ${colors.primary[200]}`
+        <div style={{
+          background: colors.secondary[50],
+          padding: '1.5rem',
+          borderRadius: '0.75rem',
+          border: `1px solid ${colors.secondary[200]}`
+        }}>
+          <pre style={{
+            whiteSpace: 'pre-wrap',
+            fontFamily: 'inherit',
+            fontSize: '0.875rem',
+            lineHeight: '1.5',
+            margin: 0
           }}>
-            <h4 style={{ color: colors.primary[700], fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
-              🏛️ Informasi Sertifikat
-            </h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <p style={{ fontSize: '0.75rem', color: colors.primary[600], margin: '0 0 0.25rem 0' }}>Nomor Sertifikat</p>
-                <p style={{ fontWeight: 600, color: colors.primary[800], margin: 0 }}>{selectedTanah.nomor_sertifikat}</p>
-              </div>
-              <div>
-                <p style={{ fontSize: '0.75rem', color: colors.primary[600], margin: '0 0 0.25rem 0' }}>Status Sertifikat</p>
-                <p style={{ fontWeight: 600, color: colors.accent.emerald, margin: 0 }}>Aktif</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Riwayat Transaksi */}
-        <div>
-          <h4 style={{ color: colors.secondary[700], fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
-            📊 Riwayat
-          </h4>
-          <div style={{
-            background: colors.secondary[50],
-            padding: '1rem',
-            borderRadius: '0.75rem',
-            border: `1px solid ${colors.secondary[200]}`
-          }}>
-            <p style={{ fontSize: '0.75rem', color: colors.secondary[600], margin: 0, textAlign: 'center' }}>
-              Riwayat transaksi dan perubahan akan ditampilkan di sini
-            </p>
-          </div>
+            {infoTanah || 'Memuat informasi...'}
+          </pre>
         </div>
       </div>
 
@@ -1147,43 +1218,12 @@ const LihatInformasiModal = ({ isOpen, onClose, selectedTanah }: any) => {
         <ModernButton variant="secondary" onClick={onClose}>
           Tutup
         </ModernButton>
-        <ModernButton variant="emerald">
-          📄 Export PDF
-        </ModernButton>
       </div>
     </ModernModal>
   );
 };
 
-// Modal Pilih Tanah
-const PilihTanahModal = ({ isOpen, onClose, onTanahSelected, title, actionLabel }: any) => {
-  const [userLands, setUserLands] = useState([
-    {
-      tanah_id: "TNH-001",
-      pemilik: "Budi Santoso",
-      luas: "500 m²",
-      lokasi: "Jl. Merdeka No. 123, Jakarta Pusat",
-      nomor_sertifikat: "SHM-123456",
-      status_verifikasi: 1
-    },
-    {
-      tanah_id: "TNH-002",
-      pemilik: "Siti Aminah",
-      luas: "750 m²",
-      lokasi: "Jl. Sudirman No. 456, Jakarta Selatan",
-      nomor_sertifikat: "",
-      status_verifikasi: 0
-    },
-    {
-      tanah_id: "TNH-003",
-      pemilik: "Ahmad Wijaya",
-      luas: "1200 m²",
-      lokasi: "Jl. Gatot Subroto No. 789, Jakarta Barat",
-      nomor_sertifikat: "SHGB-789012",
-      status_verifikasi: 1
-    }
-  ]);
-
+const PilihTanahModal: React.FC<PilihTanahModalProps> = ({ isOpen, onClose, onTanahSelected, title, actionLabel, userLands }) => {
   const handleTanahSelect = (tanah: any) => {
     onTanahSelected(tanah);
     onClose();
@@ -1197,7 +1237,7 @@ const PilihTanahModal = ({ isOpen, onClose, onTanahSelected, title, actionLabel 
         </p>
 
         <div style={{ display: 'grid', gap: '1rem', maxHeight: '400px', overflowY: 'auto' }}>
-          {userLands.map((tanah) => (
+          {userLands.map((tanah: any) => (
             <div
               key={tanah.tanah_id}
               onClick={() => handleTanahSelect(tanah)}
@@ -1276,57 +1316,69 @@ const PilihTanahModal = ({ isOpen, onClose, onTanahSelected, title, actionLabel 
   );
 };
 
-// Main Home Component
+
+// --- Komponen Utama Home ---
+
 const Home: React.FC = () => {
-  const [activeAddress, setActiveAddress] = useState<string | null>(null);
+  const { activeAddress, transactionSigner, wallets, signTransactions } = useWallet();
   const [registerModal, setRegisterModal] = useState(false);
-  const [userLands, setUserLands] = useState<any[]>([]);
+  const [contractData, setContractData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
   const [buatSertifikatModal, setBuatSertifikatModal] = useState(false);
   const [transferModal, setTransferModal] = useState(false);
   const [lihatInfoModal, setLihatInfoModal] = useState(false);
   const [selectedTanah, setSelectedTanah] = useState<any>(null);
 
+  const [openWalletModal, setOpenWalletModal] = useState(false);
+
   const [modalTerbuka, setModalTerbuka] = useState<'none' | 'daftar' | 'sertifikat' | 'transfer' | 'info'>('none');
-  const [tanahTerpilih, setTanahTerpilih] = useState(null);
-  // Mock data
-  const mockLands = [
-    {
-      tanah_id: "TNH-001",
-      pemilik: "Budi Santoso",
-      luas: "500 m²",
-      lokasi: "Jl. Merdeka No. 123, Jakarta Pusat",
-      nomor_sertifikat: "SHM-123456",
-      status_verifikasi: 1
-    },
-    {
-      tanah_id: "TNH-002",
-      pemilik: "Siti Aminah",
-      luas: "750 m²",
-      lokasi: "Jl. Sudirman No. 456, Jakarta Selatan",
-      nomor_sertifikat: "",
-      status_verifikasi: 0
-    },
-    {
-      tanah_id: "TNH-003",
-      pemilik: "Ahmad Wijaya",
-      luas: "1200 m²",
-      lokasi: "Jl. Gatot Subroto No. 789, Jakarta Barat",
-      nomor_sertifikat: "SHGB-789012",
-      status_verifikasi: 1
+  const [tanahTerpilih, setTanahTerpilih] = useState<any>(null);
+
+  // Fungsi untuk memuat data dari contract
+  const loadContractData = async () => {
+    if (!activeAddress) return;
+    try {
+      setLoading(true);
+      const data = await readContractGlobalState();
+      setContractData(data);
+    } catch (error) {
+      console.error('Error loading contract data:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  // Panggil saat wallet terhubung
+  useEffect(() => {
+    if (activeAddress) {
+      loadContractData();
+    }
+  }, [activeAddress]);
+
+  // Data fallback jika contract belum ada data
+  const userLands = contractData && contractData.tanah_id ? [{
+    tanah_id: contractData.tanah_id || "TNH-001",
+    pemilik: contractData.pemilik || "Belum diatur",
+    luas: contractData.luas || "0 m²",
+    lokasi: contractData.lokasi || "Belum diatur",
+    nomor_sertifikat: contractData.nomor_sertifikat || "",
+    status_verifikasi: contractData.status_verifikasi || 0
+  }] : [];
 
   const stats = {
     total: userLands.length,
-    verified: userLands.filter(t => t.status_verifikasi === 1).length,
-    pending: userLands.filter(t => t.status_verifikasi === 0).length,
-    area: userLands.reduce((total, tanah) => total + parseInt(tanah.luas), 0)
+    verified: userLands.filter((t: any) => t.status_verifikasi === 1).length,
+    pending: userLands.filter((t: any) => t.status_verifikasi === 0).length,
+    area: userLands.reduce((total: number, tanah: any) => {
+      const luasNumber = parseInt(tanah.luas) || 0;
+      return total + luasNumber;
+    }, 0)
   };
 
   const bukaModal = (jenis: 'daftar' | 'sertifikat' | 'transfer' | 'info') => {
     setModalTerbuka(jenis);
-    setTanahTerpilih(null);
+    setTanahTerpilih(null); // Reset pilihan tanah saat membuka modal baru
   };
 
   const tutupModal = () => {
@@ -1336,29 +1388,208 @@ const Home: React.FC = () => {
 
   const pilihTanah = (tanah: any) => {
     setTanahTerpilih(tanah);
-    // Modal tetap terbuka untuk aksi selanjutnya
+    // Logika untuk membuka modal spesifik setelah memilih tanah
+    if (modalTerbuka === 'sertifikat') {
+      setSelectedTanah(tanah);
+      setBuatSertifikatModal(true);
+    } else if (modalTerbuka === 'transfer') {
+      setSelectedTanah(tanah);
+      setTransferModal(true);
+    } else if (modalTerbuka === 'info') {
+      setSelectedTanah(tanah);
+      setLihatInfoModal(true);
+    }
+    // Tutup modal pemilihan
+    tutupModal();
   };
 
   const connectWallet = () => {
-    setActiveAddress('addr_algorand_test_1234567890abcdef');
-    setUserLands(mockLands);
+    setOpenWalletModal(true);
   };
 
-  const disconnectWallet = () => {
-    setActiveAddress(null);
-    setUserLands([]);
+  const disconnectWallet = async () => {
+    if (wallets) {
+      const activeWallet = wallets.find((w) => w.isActive);
+      if (activeWallet) {
+        await activeWallet.disconnect();
+      } else {
+        localStorage.removeItem('@txnlab/use-wallet:v3');
+        window.location.reload();
+      }
+    }
   };
 
   const handleVerifikasi = async (tanahId: string) => {
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setUserLands(prev => prev.map(tanah =>
-      tanah.tanah_id === tanahId
-        ? { ...tanah, status_verifikasi: 1 }
-        : tanah
-    ));
-    alert(`Tanah ${tanahId} berhasil diverifikasi!`);
+    if (!activeAddress || !signTransactions) {
+      alert('Wallet tidak terhubung dengan benar.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const method = "verifikasi_tanah";
+
+      // ✅ PERBAIKAN: Pastikan activeAddress adalah string
+      if (!activeAddress) {
+        throw new Error('Active address is null.');
+      }
+
+      const appArgs: (string | number | bigint)[] = []; // ABI call butuh array
+      const tx = await createMethodCallTxn(activeAddress, method, appArgs);
+
+      const signedTxn = await signTransactions([tx]);
+      const validSignedTxns = signedTxn?.filter((tx): tx is Uint8Array => tx !== null) || [];
+
+      if (validSignedTxns.length === 0) {
+        throw new Error('Transaction signing failed');
+      }
+
+      const response = await algodClient.sendRawTransaction(validSignedTxns).do();
+      const txId = response.txid;
+      await algosdk.waitForConfirmation(algodClient, txId, 4);
+
+      alert(`Tanah berhasil diverifikasi! TX: ${txId}`);
+      await loadContractData();
+    } catch (error: any) {
+      console.error('Verifikasi error:', error);
+      alert(`Gagal memverifikasi tanah: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const handleSubmitRegister = async (formData: any) => {
+    if (!activeAddress || !signTransactions) {
+      alert('Wallet tidak terhubung. Silakan connect wallet terlebih dahulu.');
+      return false;
+    }
+
+    try {
+      setLoading(true);
+
+      const isConnected = await testNetworkConnection();
+      if (!isConnected) {
+        alert('Koneksi jaringan gagal.');
+        return false;
+      }
+
+      const method = "register_tanah";
+      const appArgs = [
+        formData.tanah_id,
+        formData.pemilik,
+        formData.luas,
+        formData.lokasi
+      ];
+
+      // Pastikan pemanggilan createMethodCallTxn memiliki 3 argumen
+      if (!activeAddress) {
+        throw new Error('Active address became null before transaction creation');
+      }
+
+      const tx = await createMethodCallTxn(activeAddress, method, appArgs);
+      const signedTxn = await signTransactions([tx]);
+      const validSignedTxns = signedTxn?.filter((tx: Uint8Array | null): tx is Uint8Array => tx !== null) || [];
+
+      if (validSignedTxns.length === 0) {
+        throw new Error('Transaction signing failed or was cancelled by user');
+      }
+
+      const response = await algodClient.sendRawTransaction(validSignedTxns).do();
+      const txId = response.txid;
+      await algosdk.waitForConfirmation(algodClient, txId, 4);
+
+      alert(`✅ Tanah berhasil didaftarkan!\nTX ID: ${txId}`);
+      await loadContractData();
+      return true;
+
+    } catch (error: any) {
+      console.error('❌ [DEBUG] Register error:', error);
+      alert(`Gagal mendaftarkan tanah: ${error.message}`);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitSertifikat = async (formData: any, selectedTanah: any) => {
+    if (!activeAddress || !signTransactions) {
+      alert('Wallet tidak terhubung dengan benar.');
+      return false;
+    }
+
+    try {
+      setLoading(true);
+      const method = "buat_sertifikat";
+      const appArgs = [formData.nomor_sertifikat];
+
+      // ✅ PERBAIKAN: Tambahkan guard untuk TypeScript
+      if (!activeAddress) {
+        throw new Error('Active address is null.');
+      }
+
+      const tx = await createMethodCallTxn(activeAddress, method, appArgs);
+      const signedTxn = await signTransactions([tx]);
+      const validSignedTxns = signedTxn?.filter((tx): tx is Uint8Array => tx !== null) || [];
+
+      if (validSignedTxns.length === 0) {
+        throw new Error('Transaction signing failed');
+      }
+
+      const response = await algodClient.sendRawTransaction(validSignedTxns).do();
+      const txId = response.txid;
+      await algosdk.waitForConfirmation(algodClient, txId, 4);
+
+      alert(`Sertifikat berhasil dibuat! TX: ${txId}`);
+      await loadContractData();
+      return true;
+    } catch (error: any) {
+      console.error('Sertifikat error:', error);
+      alert(`Gagal membuat sertifikat: ${error.message}`);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitTransfer = async (formData: any, selectedTanah: any) => {
+    if (!activeAddress || !signTransactions) {
+      alert('Wallet tidak terhubung dengan benar.');
+      return false;
+    }
+
+    try {
+      setLoading(true);
+      const method = "pindah_kepemilikan";
+      const appArgs = [formData.pemilik_baru];
+
+      // ✅ PERBAIKAN: Tambahkan guard untuk TypeScript
+      if (!activeAddress) {
+        throw new Error('Active address is null.');
+      }
+
+      const tx = await createMethodCallTxn(activeAddress, method, appArgs);
+      const signedTxn = await signTransactions([tx]);
+      const validSignedTxns = signedTxn?.filter((tx): tx is Uint8Array => tx !== null) || [];
+
+      if (validSignedTxns.length === 0) {
+        throw new Error('Transaction signing failed');
+      }
+
+      const response = await algodClient.sendRawTransaction(validSignedTxns).do();
+      const txId = response.txid;
+      await algosdk.waitForConfirmation(algodClient, txId, 4);
+
+      alert(`Kepemilikan berhasil dipindahkan! TX: ${txId}`);
+      await loadContractData();
+      return true;
+    } catch (error: any) {
+      console.error('Transfer error:', error);
+      alert(`Gagal memindahkan kepemilikan: ${error.message}`);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div style={{
@@ -1367,7 +1598,7 @@ const Home: React.FC = () => {
       backgroundSize: '400% 400%',
       animation: 'gradient 15s ease infinite'
     }}>
-      {/* Background Pattern */}
+
       <div style={{
         position: 'fixed',
         top: 0,
@@ -1375,8 +1606,8 @@ const Home: React.FC = () => {
         right: 0,
         bottom: 0,
         background: `radial-gradient(circle at 20% 80%, ${colors.primary[100]}22 0%, transparent 50%),
-                    radial-gradient(circle at 80% 20%, ${colors.accent.cyan}11 0%, transparent 50%),
-                    radial-gradient(circle at 40% 40%, ${colors.accent.violet}11 0%, transparent 50%)`,
+                   radial-gradient(circle at 80% 20%, ${colors.accent.cyan}11 0%, transparent 50%),
+                   radial-gradient(circle at 40% 40%, ${colors.accent.violet}11 0%, transparent 50%)`,
         pointerEvents: 'none'
       }} />
 
@@ -1391,16 +1622,19 @@ const Home: React.FC = () => {
         flexDirection: 'column'
       }}>
 
-        {/* Hero Section - Tanpa header navbar */}
         <HeroSection
-          onConnectWallet={connectWallet}
+          onConnectWallet={() => setOpenWalletModal(true)}
           activeAddress={activeAddress}
           onDisconnect={disconnectWallet}
         />
 
+        <ConnectWallet
+          openModal={openWalletModal}
+          closeModal={() => setOpenWalletModal(false)}
+        />
+
         {activeAddress && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            {/* Stats Section - Warna berbeda untuk setiap card */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
@@ -1437,15 +1671,12 @@ const Home: React.FC = () => {
               />
             </div>
 
-            {/* Main Content */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: '280px 1fr',
               gap: '2rem',
               flex: 1
             }}>
-
-              {/* Sidebar dengan warna hijau */}
               <div style={{ position: 'sticky', top: '2rem', alignSelf: 'flex-start' }}>
                 <ModernCard variant="emerald" style={{ padding: '1.5rem' }}>
                   <h2 style={{
@@ -1459,7 +1690,6 @@ const Home: React.FC = () => {
                   }}>
                     <span>⚡</span> Quick Actions
                   </h2>
-
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <QuickActionButton
                       icon="📝"
@@ -1467,53 +1697,31 @@ const Home: React.FC = () => {
                       description="Tambahkan properti baru"
                       onClick={() => setRegisterModal(true)}
                     />
-
                     <QuickActionButton
                       icon="🏛️"
                       label="Buat Sertifikat"
                       description="Generate sertifikat digital"
                       variant="amber"
-                      onClick={() => bukaModal('sertifikat')} // GANTI INI
+                      onClick={() => bukaModal('sertifikat')}
                     />
-
                     <QuickActionButton
                       icon="🔄"
                       label="Transfer Kepemilikan"
                       description="Pindahkan kepemilikan tanah"
                       variant="violet"
-                      onClick={() => bukaModal('transfer')} // GANTI INI
+                      onClick={() => bukaModal('transfer')}
                     />
-
                     <QuickActionButton
                       icon="📋"
                       label="Lihat Informasi"
                       description="Detail properti dan riwayat"
                       variant="emerald"
-                      onClick={() => bukaModal('info')} // GANTI INI
-                    />
-
-                    <BuatSertifikatModal
-                      isOpen={buatSertifikatModal}
-                      onClose={() => setBuatSertifikatModal(false)}
-                      selectedTanah={selectedTanah}
-                    />
-
-                    <TransferKepemilikanModal
-                      isOpen={transferModal}
-                      onClose={() => setTransferModal(false)}
-                      selectedTanah={selectedTanah}
-                    />
-
-                    <LihatInformasiModal
-                      isOpen={lihatInfoModal}
-                      onClose={() => setLihatInfoModal(false)}
-                      selectedTanah={selectedTanah}
+                      onClick={() => bukaModal('info')}
                     />
                   </div>
                 </ModernCard>
               </div>
 
-              {/* Content Area dengan card berwarna */}
               <div>
                 <ModernCard variant="primary" style={{
                   padding: '1.5rem',
@@ -1555,11 +1763,12 @@ const Home: React.FC = () => {
                     gap: '1.5rem',
                     alignContent: 'flex-start'
                   }}>
-                    {userLands.map((tanah) => (
+                    {userLands.map((tanah: any) => (
                       <TanahCard
                         key={tanah.tanah_id}
                         tanah={tanah}
                         onVerifikasi={handleVerifikasi}
+                        loading={loading}
                       />
                     ))}
                   </div>
@@ -1620,31 +1829,43 @@ const Home: React.FC = () => {
       <RegisterTanahModal
         isOpen={registerModal}
         onClose={() => setRegisterModal(false)}
+        onSubmit={handleSubmitRegister}
+        loading={loading}
       />
-
       <BuatSertifikatModal
         isOpen={buatSertifikatModal}
         onClose={() => setBuatSertifikatModal(false)}
         selectedTanah={selectedTanah}
+        onSubmit={handleSubmitSertifikat}
+        loading={loading}
       />
-
       <TransferKepemilikanModal
         isOpen={transferModal}
         onClose={() => setTransferModal(false)}
         selectedTanah={selectedTanah}
+        onSubmit={handleSubmitTransfer}
+        loading={loading}
       />
-
       <LihatInformasiModal
         isOpen={lihatInfoModal}
         onClose={() => setLihatInfoModal(false)}
         selectedTanah={selectedTanah}
       />
-
-      {/* Modal Pilih Tanah untuk berbagai aksi */}
       <PilihTanahModal
-        isOpen={modalTerbuka !== 'none'}
+        isOpen={modalTerbuka !== 'none' && modalTerbuka !== 'daftar'}
         onClose={tutupModal}
         onTanahSelected={pilihTanah}
+        userLands={userLands}
+        title={
+          modalTerbuka === 'sertifikat' ? "🏛️ Pilih Tanah untuk Buat Sertifikat" :
+            modalTerbuka === 'transfer' ? "🔄 Pilih Tanah untuk Transfer Kepemilikan" :
+              modalTerbuka === 'info' ? "📋 Pilih Tanah untuk Lihat Informasi" : ""
+        }
+        actionLabel={
+          modalTerbuka === 'sertifikat' ? "dibuatkan sertifikat" :
+            modalTerbuka === 'transfer' ? "ditransfer kepemilikannya" :
+              modalTerbuka === 'info' ? "dilihat informasinya" : ""
+        }
       />
 
       {/* Global Styles */}
@@ -1677,23 +1898,6 @@ const Home: React.FC = () => {
           }
         `}
       </style>
-
-      {/* Modal Pilih Tanah untuk berbagai aksi */}
-      <PilihTanahModal
-        isOpen={modalTerbuka !== 'none'}
-        onClose={tutupModal}
-        onTanahSelected={pilihTanah}
-        title={
-          modalTerbuka === 'sertifikat' ? "🏛️ Pilih Tanah untuk Buat Sertifikat" :
-            modalTerbuka === 'transfer' ? "🔄 Pilih Tanah untuk Transfer Kepemilikan" :
-              modalTerbuka === 'info' ? "📋 Pilih Tanah untuk Lihat Informasi" : ""
-        }
-        actionLabel={
-          modalTerbuka === 'sertifikat' ? "dibuatkan sertifikat" :
-            modalTerbuka === 'transfer' ? "ditransfer kepemilikannya" :
-              modalTerbuka === 'info' ? "dilihat informasinya" : ""
-        }
-      />
     </div>
   );
 };
